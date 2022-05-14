@@ -2,6 +2,7 @@ package version
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -32,11 +33,12 @@ const (
 
 // Version represents a single version.
 type Version struct {
-	metadata string
-	pre      string
-	segments []int64
-	si       int
-	original string
+	major, minor, patch uint64
+	metadata            string
+	pre                 string
+	segments            []int64
+	si                  int
+	original            string
 }
 
 func init() {
@@ -62,6 +64,32 @@ func newVersion(v string, pattern *regexp.Regexp) (*Version, error) {
 	if matches == nil {
 		return nil, fmt.Errorf("Malformed version: %s", v)
 	}
+
+	var err error
+	var major, minor, patch uint64
+	major, err = strconv.ParseUint(matches[1], 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("Error parsing version segment: %s", err)
+	}
+
+	if matches[2] != "" {
+		minor, err = strconv.ParseUint(strings.TrimPrefix(matches[2], "."), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("Error parsing version segment: %s", err)
+		}
+	} else {
+		minor = 0
+	}
+
+	if matches[3] != "" {
+		patch, err = strconv.ParseUint(strings.TrimPrefix(matches[3], "."), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("Error parsing version segment: %s", err)
+		}
+	} else {
+		patch = 0
+	}
+
 	segmentsStr := strings.Split(matches[1], ".")
 	segments := make([]int64, len(segmentsStr))
 	for i, str := range segmentsStr {
@@ -87,6 +115,9 @@ func newVersion(v string, pattern *regexp.Regexp) (*Version, error) {
 	}
 
 	return &Version{
+		major:    major,
+		minor:    minor,
+		patch:    patch,
 		metadata: matches[10],
 		pre:      pre,
 		segments: segments,
@@ -387,4 +418,45 @@ func (v *Version) String() string {
 // potential whitespace, `v` prefix, etc.
 func (v *Version) Original() string {
 	return v.original
+}
+
+// Major returns the major version.
+func (v Version) Major() uint64 {
+	return v.major
+}
+
+// Minor returns the minor version.
+func (v Version) Minor() uint64 {
+	return v.minor
+}
+
+// Patch returns the patch version.
+func (v Version) Patch() uint64 {
+	return v.patch
+}
+
+// UnmarshalJSON implements JSON.Unmarshaler interface.
+func (v *Version) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	temp, err := NewVersion(s)
+	if err != nil {
+		return err
+	}
+	v.major = temp.major
+	v.minor = temp.minor
+	v.patch = temp.patch
+	v.metadata = temp.metadata
+	v.pre = temp.pre
+	v.segments = temp.segments
+	v.si = temp.si
+	v.original = temp.original
+	return nil
+}
+
+// MarshalJSON implements JSON.Marshaler interface.
+func (v Version) MarshalJSON() ([]byte, error) {
+	return json.Marshal(v.String())
 }

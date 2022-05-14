@@ -1,1 +1,3 @@
-module github.com/hashicorp/go-version
+module github.com/Jukie/go-version
+
+go 1.18

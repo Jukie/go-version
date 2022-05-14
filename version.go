@@ -69,13 +69,13 @@ func newVersion(v string, pattern *regexp.Regexp) (*Version, error) {
 	var major, minor, patch uint64
 	major, err = strconv.ParseUint(matches[1], 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing version segment: %s", err)
+		return nil, fmt.Errorf("Error parsing major version segment: %s", err)
 	}
 
 	if matches[2] != "" {
 		minor, err = strconv.ParseUint(strings.TrimPrefix(matches[2], "."), 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("Error parsing version segment: %s", err)
+			return nil, fmt.Errorf("Error parsing minor version segment: %s", err)
 		}
 	} else {
 		minor = 0
@@ -84,7 +84,7 @@ func newVersion(v string, pattern *regexp.Regexp) (*Version, error) {
 	if matches[3] != "" {
 		patch, err = strconv.ParseUint(strings.TrimPrefix(matches[3], "."), 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("Error parsing version segment: %s", err)
+			return nil, fmt.Errorf("Error parsing patch version segment: %s", err)
 		}
 	} else {
 		patch = 0
